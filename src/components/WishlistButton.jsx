@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
+import { useAuthRequired } from '../hooks/useAuthRequired';
+import AuthRequiredModal from './AuthRequiredModal';
 
 const WishlistButton = ({ product, size = 'md', showLabel = false }) => {
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { requireAuth, showAuthModal, authMessage, closeAuthModal } = useAuthRequired();
   const [animate, setAnimate] = useState(false);
   const isFavorite = isInWishlist(product.id);
 
@@ -23,11 +26,17 @@ const WishlistButton = ({ product, size = 'md', showLabel = false }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    toggleWishlist(product);
-    
-    // Animação de pulse
-    setAnimate(true);
-    setTimeout(() => setAnimate(false), 300);
+    // Verificar se está logado antes de favoritar
+    requireAuth(
+      () => {
+        toggleWishlist(product);
+        
+        // Animação de pulse
+        setAnimate(true);
+        setTimeout(() => setAnimate(false), 300);
+      },
+      'Você precisa fazer login para adicionar produtos aos favoritos'
+    );
   };
 
   if (showLabel) {
@@ -68,6 +77,7 @@ const WishlistButton = ({ product, size = 'md', showLabel = false }) => {
 
   // Versão ícone apenas (circular)
   return (
+    <>
     <button
       onClick={handleClick}
       className={`
@@ -96,6 +106,13 @@ const WishlistButton = ({ product, size = 'md', showLabel = false }) => {
         `}
       />
     </button>
+    
+    <AuthRequiredModal
+      isOpen={showAuthModal}
+      onClose={closeAuthModal}
+      message={authMessage}
+    />
+    </>
   );
 };
 

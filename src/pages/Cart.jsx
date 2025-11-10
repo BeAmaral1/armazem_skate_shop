@@ -2,9 +2,12 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuthRequired } from '../hooks/useAuthRequired';
+import AuthRequiredModal from '../components/AuthRequiredModal';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, getCartTotal } = useCart();
+  const { requireAuth, showAuthModal, authMessage, closeAuthModal } = useAuthRequired();
   const navigate = useNavigate();
 
   if (cart.length === 0) {
@@ -132,7 +135,10 @@ const Cart = () => {
               </div>
 
               <button
-                onClick={() => navigate('/checkout')}
+                onClick={() => requireAuth(
+                  () => navigate('/checkout'),
+                  'Você precisa fazer login ou criar uma conta para finalizar a compra'
+                )}
                 className="w-full btn-primary mb-4"
               >
                 Finalizar Compra
@@ -151,6 +157,12 @@ const Cart = () => {
           </div>
         </div>
       </div>
+      
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={closeAuthModal}
+        message={authMessage}
+      />
     </div>
   );
 };
