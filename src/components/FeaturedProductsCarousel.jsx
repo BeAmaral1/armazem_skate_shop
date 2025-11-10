@@ -168,14 +168,11 @@ const FeaturedProductsCarousel = ({ products }) => {
       {/* Container do Carrossel com scroll livre */}
       <div 
         ref={carouselRef}
-        className="flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide select-none pb-4"
+        className="flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide select-none pb-4 scroll-snap-x smooth-scroll will-change-transform"
         style={{ 
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none',
-          cursor: 'grab',
-          scrollBehavior: 'smooth',
-          WebkitOverflowScrolling: 'touch',
-          willChange: 'scroll-position'
+          cursor: 'grab'
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -188,7 +185,7 @@ const FeaturedProductsCarousel = ({ products }) => {
         {products.map(product => (
           <div
             key={product.id}
-            className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] xl:w-[15%]"
+            className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] xl:w-[15%] scroll-snap-item"
           >
             <ProductCard product={product} />
           </div>

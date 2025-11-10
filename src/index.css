@@ -188,3 +188,77 @@ main {
 .animate-scroll-brands:hover {
   animation-play-state: paused;
 }
+
+/* ==========================================
+   OTIMIZAÇÕES DE PERFORMANCE PARA SCROLL LISO
+   ========================================== */
+
+/* Scroll Snap para carrosséis - snap suave nos cards */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+
+/* GPU Acceleration global para elementos que movem */
+.will-change-transform {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Otimização de rendering com CSS containment */
+.card,
+.product-card {
+  contain: layout style paint;
+}
+
+/* Smooth momentum scrolling para iOS/Safari */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Reduzir motion para melhor performance durante scroll */
+@media (prefers-reduced-motion: no-preference) {
+  .carousel-item {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Forçar GPU para imagens durante scroll */
+.carousel-image img {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Otimizar hover states para não causar reflow */
+.card:hover {
+  transform: translateY(-2px) translateZ(0);
+  will-change: transform;
+}
+
+/* Remover animações pesadas durante scroll ativo */
+.scrolling * {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
+/* Performance hints para browser */
+.performance-layer {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  contain: strict;
+}
+
+/* Suavizar transições de opacidade */
+.fade-transition {
+  transition: opacity 0.2s ease-out;
+  will-change: opacity;
+}

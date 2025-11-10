@@ -1,7 +1,8 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { setupScrollDetection } from './utils/scrollOptimizer';
 import { ProductProvider } from './context/ProductContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
@@ -52,6 +53,12 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
+  // Setup de detecção de scroll para otimizar performance
+  useEffect(() => {
+    const cleanup = setupScrollDetection();
+    return cleanup;
+  }, []);
+
   return (
     <AuthProvider>
       <ProductProvider>
