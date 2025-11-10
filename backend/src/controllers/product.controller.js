@@ -287,6 +287,137 @@ class ProductController {
       });
     }
   }
+
+  /**
+   * Criar produto (ADMIN)
+   */
+  async createProduct(req, res) {
+    try {
+      const productData = req.body;
+
+      // Gerar slug a partir do nome
+      const slug = productData.name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-');
+
+      const product = await prisma.product.create({
+        data: {
+          ...productData,
+          slug,
+          active: productData.active !== undefined ? productData.active : true
+        }
+      });
+
+      logger.info('Product created', { productId: product.id, name: product.name });
+
+      return res.status(201).json({
+        success: true,
+        product
+      });
+
+    } catch (error) {
+      logger.error('Error creating product:', { error: error.message });
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao criar produto'
+      });
+    }
+  }
+
+  /**
+   * Atualizar produto (ADMIN)
+   */
+  async updateProduct(req, res) {
+    try {
+      const { id } = req.params;
+      const productData = req.body;
+
+      // Verificar se produto existe
+      const existingProduct = await prisma.product.findUnique({
+        where: { id }
+      });
+
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          error: 'Produto não encontrado'
+        });
+      }
+
+      // Se o nome mudou, atualizar o slug
+      if (productData.name && productData.name !== existingProduct.name) {
+        productData.slug = productData.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-');
+      }
+
+      const product = await prisma.product.update({
+        where: { id },
+        data: productData
+      });
+
+      logger.info('Product updated', { productId: id, name: product.name });
+
+      return res.json({
+        success: true,
+        product
+      });
+
+    } catch (error) {
+      logger.error('Error updating product:', { error: error.message });
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao atualizar produto'
+      });
+    }
+  }
+
+  /**
+   * Deletar produto (ADMIN)
+   */
+  async deleteProduct(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Verificar se produto existe
+      const existingProduct = await prisma.product.findUnique({
+        where: { id }
+      });
+
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          error: 'Produto não encontrado'
+        });
+      }
+
+      // Soft delete - apenas desativar
+      await prisma.product.update({
+        where: { id },
+        data: { active: false }
+      });
+
+      logger.info('Product deleted (soft)', { productId: id });
+
+      return res.json({
+        success: true,
+        message: 'Produto deletado com sucesso'
+      });
+
+    } catch (error) {
+      logger.error('Error deleting product:', { error: error.message });
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao deletar produto'
+      });
+    }
+  }
 }
 
 export default new ProductController();

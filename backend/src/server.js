@@ -7,6 +7,7 @@ import productRoutes from './routes/product.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import cmsRoutes from './routes/cms.routes.js';
 import { prisma } from './config/database.js';
 
 // Carregar variáveis de ambiente
@@ -63,6 +64,9 @@ app.use('/api/payment', paymentRoutes);
 
 // Product routes
 app.use('/api/products', productRoutes);
+
+// CMS routes (content management)
+app.use('/api/cms', cmsRoutes);
 
 // 404 Handler
 app.use('*', (req, res) => {

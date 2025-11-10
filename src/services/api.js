@@ -159,4 +159,204 @@ export const authService = {
   }
 };
 
+// ==================== CMS ====================
+
+export const cmsService = {
+  // Buscar conteúdo de uma página
+  getPageContent: async (page, language = 'pt-BR') => {
+    const response = await api.get(`/cms/content/${page}`, {
+      params: { language }
+    });
+    return response.data;
+  },
+
+  // Criar/atualizar conteúdo (admin)
+  saveContent: async (contentData) => {
+    const response = await api.post('/cms/content', contentData);
+    return response.data;
+  },
+
+  // Atualizar múltiplos conteúdos (admin)
+  saveBulkContent: async (contents) => {
+    const response = await api.put('/cms/content/bulk', { contents });
+    return response.data;
+  },
+
+  // Deletar conteúdo (admin)
+  deleteContent: async (id) => {
+    const response = await api.delete(`/cms/content/${id}`);
+    return response.data;
+  },
+
+  // Buscar configurações do site
+  getSettings: async (group = null) => {
+    const params = group ? { group } : {};
+    const response = await api.get('/cms/settings', { params });
+    return response.data;
+  },
+
+  // Atualizar configuração (admin)
+  updateSetting: async (key, value) => {
+    const response = await api.put(`/cms/settings/${key}`, { value });
+    return response.data;
+  },
+
+  // Buscar banners
+  getBanners: async (position = null) => {
+    const params = position ? { position } : {};
+    const response = await api.get('/cms/banners', { params });
+    return response.data;
+  },
+
+  // Criar banner (admin)
+  createBanner: async (bannerData) => {
+    const response = await api.post('/cms/banners', bannerData);
+    return response.data;
+  },
+
+  // Atualizar banner (admin)
+  updateBanner: async (id, bannerData) => {
+    const response = await api.put(`/cms/banners/${id}`, bannerData);
+    return response.data;
+  },
+
+  // Deletar banner (admin)
+  deleteBanner: async (id) => {
+    const response = await api.delete(`/cms/banners/${id}`);
+    return response.data;
+  },
+
+  // Buscar FAQs
+  getFaqs: async (category = null) => {
+    const params = category ? { category } : {};
+    const response = await api.get('/cms/faqs', { params });
+    return response.data;
+  },
+
+  // Criar FAQ (admin)
+  createFaq: async (faqData) => {
+    const response = await api.post('/cms/faqs', faqData);
+    return response.data;
+  },
+
+  // Atualizar FAQ (admin)
+  updateFaq: async (id, faqData) => {
+    const response = await api.put(`/cms/faqs/${id}`, faqData);
+    return response.data;
+  },
+
+  // Deletar FAQ (admin)
+  deleteFaq: async (id) => {
+    const response = await api.delete(`/cms/faqs/${id}`);
+    return response.data;
+  },
+
+  // Validar cupom
+  validateCoupon: async (code, cartValue) => {
+    const response = await api.post('/cms/coupons/validate', { 
+      code, 
+      cartValue 
+    });
+    return response.data;
+  },
+
+  // Listar cupons (admin)
+  getCoupons: async () => {
+    const response = await api.get('/cms/coupons');
+    return response.data;
+  },
+
+  // Criar cupom (admin)
+  createCoupon: async (couponData) => {
+    const response = await api.post('/cms/coupons', couponData);
+    return response.data;
+  },
+
+  // Atualizar cupom (admin)
+  updateCoupon: async (id, couponData) => {
+    const response = await api.put(`/cms/coupons/${id}`, couponData);
+    return response.data;
+  },
+
+  // Deletar cupom (admin)
+  deleteCoupon: async (id) => {
+    const response = await api.delete(`/cms/coupons/${id}`);
+    return response.data;
+  }
+};
+
+// ==================== ADMIN ====================
+
+export const adminService = {
+  // Dashboard
+  getDashboardStats: async () => {
+    const response = await api.get('/admin/dashboard');
+    return response.data;
+  },
+
+  getAnalytics: async (period) => {
+    const response = await api.get('/admin/analytics', { params: { period } });
+    return response.data;
+  },
+
+  // Orders
+  getAllOrders: async (filters = {}) => {
+    const response = await api.get('/admin/orders', { params: filters });
+    return response.data;
+  },
+
+  updateOrderStatus: async (orderId, status) => {
+    const response = await api.patch(`/admin/orders/${orderId}/status`, { status });
+    return response.data;
+  },
+
+  // Users/Customers
+  getAllUsers: async (filters = {}) => {
+    const response = await api.get('/admin/users', { params: filters });
+    return response.data;
+  },
+
+  updateUserStatus: async (userId, status) => {
+    const response = await api.patch(`/admin/users/${userId}/status`, { status });
+    return response.data;
+  },
+
+  deleteUser: async (userId) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  // Logs
+  getPaymentLogs: async () => {
+    const response = await api.get('/admin/logs/payments');
+    return response.data;
+  },
+
+  getSystemLogs: async () => {
+    const response = await api.get('/admin/logs/system');
+    return response.data;
+  },
+
+  getWebhookLogs: async () => {
+    const response = await api.get('/admin/logs/webhooks');
+    return response.data;
+  }
+};
+
+// Adicionar métodos CRUD ao productService
+productService.create = async (productData) => {
+  const response = await api.post('/products', productData);
+  return response.data;
+};
+
+productService.update = async (id, productData) => {
+  const response = await api.put(`/products/${id}`, productData);
+  return response.data;
+};
+
+productService.delete = async (id) => {
+  const response = await api.delete(`/products/${id}`);
+  return response.data;
+};
+
 export default api;

@@ -54,6 +54,18 @@ const ReturnsPolicy = lazy(() => import('./pages/ReturnsPolicy'));
 const OrderTracking = lazy(() => import('./pages/OrderTracking'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+// Admin Pages
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/admin/DashboardImproved'));
+const ContentEditor = lazy(() => import('./pages/admin/ContentEditor'));
+const BannerManager = lazy(() => import('./pages/admin/BannerManager'));
+const CouponManager = lazy(() => import('./pages/admin/CouponManager'));
+const ProductManager = lazy(() => import('./pages/admin/ProductManager'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+const OrderManager = lazy(() => import('./pages/admin/OrderManager'));
+const CustomerManager = lazy(() => import('./pages/admin/CustomerManager'));
+const FaqManager = lazy(() => import('./pages/admin/FaqManager'));
+
 function App() {
   // Setup de detecção de scroll para otimizar performance
   useEffect(() => {
@@ -186,8 +198,26 @@ function App() {
                       <Referrals />
                     </PrivateRoute>
                   } />
-                    {/* 404 Route */}
-                    <Route path="*" element={<NotFound />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin" element={
+                    <PrivateRoute requiredRole="admin">
+                      <AdminLayout />
+                    </PrivateRoute>
+                  }>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="produtos" element={<ProductManager />} />
+                    <Route path="pedidos" element={<OrderManager />} />
+                    <Route path="clientes" element={<CustomerManager />} />
+                    <Route path="conteudo" element={<ContentEditor />} />
+                    <Route path="banners" element={<BannerManager />} />
+                    <Route path="faqs" element={<FaqManager />} />
+                    <Route path="cupons" element={<CouponManager />} />
+                    <Route path="configuracoes" element={<SettingsPage />} />
+                  </Route>
+
+                  {/* 404 Route */}
+                  <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </main>

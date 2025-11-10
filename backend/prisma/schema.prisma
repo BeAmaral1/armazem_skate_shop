@@ -379,3 +379,145 @@ enum LogLevel {
   ERROR
   DEBUG
 }
+
+// ==================== CMS / CONTEÚDO EDITÁVEL ====================
+
+model PageContent {
+  id          String   @id @default(uuid())
+  page        String   // "home", "about", "footer", etc
+  section     String   // "hero", "features", "cta", etc
+  key         String   // "title", "subtitle", "description", "button_text"
+  
+  value       String   @db.Text
+  type        ContentType @default(TEXT)
+  
+  // Multilíngue (futuro)
+  language    String   @default("pt-BR")
+  
+  active      Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([page, section, key, language])
+  @@index([page])
+  @@index([active])
+  @@map("page_content")
+}
+
+enum ContentType {
+  TEXT          // Texto simples
+  TEXTAREA      // Texto longo
+  HTML          // HTML rico
+  IMAGE_URL     // URL de imagem
+  LINK          // Link/URL
+  NUMBER        // Número
+  BOOLEAN       // Sim/Não
+  JSON          // JSON customizado
+}
+
+model SiteSettings {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  type        SettingType @default(TEXT)
+  group       String   // "general", "seo", "social", "email", etc
+  label       String   // Nome amigável
+  description String?  // Descrição do que faz
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([group])
+  @@map("site_settings")
+}
+
+enum SettingType {
+  TEXT
+  TEXTAREA
+  EMAIL
+  URL
+  NUMBER
+  BOOLEAN
+  COLOR
+  IMAGE
+  SELECT
+  JSON
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  title       String
+  subtitle    String?  @db.Text
+  image       String   // URL da imagem
+  imageAlt    String?
+  
+  buttonText  String?
+  buttonLink  String?
+  
+  position    String   @default("home_hero") // Onde aparece
+  order       Int      @default(0)
+  
+  active      Boolean  @default(true)
+  
+  // Datas de agendamento
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([position])
+  @@index([active])
+  @@map("banners")
+}
+
+model Faq {
+  id          String   @id @default(uuid())
+  question    String   @db.Text
+  answer      String   @db.Text
+  
+  category    String   @default("geral")
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([category])
+  @@index([active])
+  @@map("faqs")
+}
+
+model Coupon {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  description String?  @db.Text
+  
+  type        CouponType
+  value       Float    // Porcentagem ou valor fixo
+  
+  minValue    Float?   // Valor mínimo do pedido
+  maxUses     Int?     // Máximo de usos totais
+  usedCount   Int      @default(0)
+  
+  maxUsesPerUser Int?  // Máximo de usos por usuário
+  
+  active      Boolean  @default(true)
+  
+  startsAt    DateTime?
+  expiresAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([code])
+  @@index([active])
+  @@map("coupons")
+}
+
+enum CouponType {
+  PERCENTAGE  // Porcentagem (ex: 10%)
+  FIXED       // Valor fixo (ex: R$ 50)
+  FREE_SHIPPING // Frete grátis
+}
