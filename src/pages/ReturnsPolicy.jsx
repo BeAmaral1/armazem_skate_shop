@@ -157,7 +157,7 @@ const ReturnsPolicy = () => {
             <h3 className="text-xl font-bold text-dark-900 mb-3">Precisa solicitar uma troca?</h3>
             <p className="text-gray-600 mb-4">Acesse sua conta para iniciar o processo</p>
             <Link 
-              to="/meus-pedidos"
+              to="/pedidos"
               className="inline-flex items-center gap-2 bg-dark-900 text-white px-6 py-3 rounded-lg hover:bg-dark-950 transition-colors"
             >
               <CheckCircle className="w-5 h-5" />

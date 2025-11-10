@@ -159,7 +159,7 @@ const OrderTracking = () => {
             <h3 className="text-xl font-bold text-dark-900 mb-3">Veja todos os seus pedidos</h3>
             <p className="text-gray-600 mb-4">Acesse seu histórico completo de compras</p>
             <Link 
-              to="/meus-pedidos"
+              to="/pedidos"
               className="inline-flex items-center gap-2 bg-dark-900 text-white px-6 py-3 rounded-lg hover:bg-dark-950 transition-colors"
             >
               <Package className="w-5 h-5" />
