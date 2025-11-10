@@ -1,0 +1,360 @@
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Waves, Wind, Shirt, Package, Clock, Eye, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
+import FeaturedProductsCarousel from '../components/FeaturedProductsCarousel';
+import SEO from '../components/SEO';
+import { products, drops } from '../data/products';
+import useSwipe from '../hooks/useSwipe';
+import { optimizeHeroImage } from '../utils/imageOptimizer';
+
+// Lazy load de componentes não críticos
+const BrandsCarousel = lazy(() => import('../components/BrandsCarousel'));
+const CategoryCarousel = lazy(() => import('../components/CategoryCarousel'));
+const InfoBanner = lazy(() => import('../components/InfoBanner'));
+const NewsBanner = lazy(() => import('../components/NewsBanner'));
+
+const Home = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Memoizar produtos em destaque
+  const featuredProducts = useMemo(
+    () => products.filter(p => p.featured).slice(0, 15),
+    []
+  );
+  
+  // Hook de swipe para o hero carousel
+  const heroSwipeRef = useSwipe(
+    () => nextSlide(), // Swipe esquerda
+    () => prevSlide(), // Swipe direita
+    50 // Threshold
+  );
+
+  // Sistema de Campanhas Sazonais - Altere facilmente aqui!
+  const campaigns = [
+    {
+      id: 'esquenta-verao',
+      title: 'Esquenta Verão',
+      subtitle: 'Armazém Skate Shop',
+      description: 'Prepare-se para o verão com até 40% OFF em pranchas e acessórios!',
+      image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=1920&q=80',
+      active: true,
+    },
+    {
+      id: 'liquidacao-inverno',
+      title: 'Liquidação de Inverno',
+      subtitle: 'Armazém Skate Shop',
+      description: 'Mega liquidação! Até 70% OFF em vestuário e acessórios de inverno',
+      image: 'https://images.unsplash.com/photo-1564982752979-3f7bc974d29a?w=1920&q=80',
+      active: false,
+    },
+    {
+      id: 'black-friday',
+      title: 'Black Friday Armazém',
+      subtitle: 'Surf & Skate',
+      description: 'Os melhores preços do ano! Até 50% OFF em TUDO + Frete Grátis',
+      image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1920&q=80',
+      active: false,
+    },
+    {
+      id: 'volta-as-aulas',
+      title: 'Volta às Aulas',
+      subtitle: 'Armazém Skate Shop',
+      description: 'Começe o ano com estilo! 30% OFF em mochilas, ténis e skates',
+      image: 'https://images.unsplash.com/photo-1564466809058-bf4114d55352?w=1920&q=80',
+      active: false,
+    },
+    {
+      id: 'dia-dos-pais',
+      title: 'Especial Dia dos Pais',
+      subtitle: 'Armazém Skate Shop',
+      description: 'Presenteie o paizão com os melhores produtos! Kits especiais até 40% OFF',
+      image: 'https://images.unsplash.com/photo-1473172707857-f9e276582ab6?w=1920&q=80',
+      active: false,
+    },
+    {
+      id: 'lancamento-colecao',
+      title: 'Nova Coleção 2025',
+      subtitle: 'Armazém Skate Shop',
+      description: 'Confira os lançamentos da temporada! Estilo e performance para você',
+      image: 'https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=1920&q=80',
+      active: false,
+    },
+    {
+      id: 'padrao',
+      title: 'Onde o asfalto encontra a onda',
+      subtitle: '',
+      description: 'As melhores marcas de surf e skate em um só lugar',
+      image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=1920&q=80',
+      active: false,
+    },
+  ];
+
+  // Carrossel automático
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % campaigns.length);
+    }, 5000); // Muda a cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [campaigns.length]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % campaigns.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + campaigns.length) % campaigns.length);
+  };
+
+  const activeCampaign = campaigns[currentSlide];
+
+  return (
+    <div className="w-full overflow-x-hidden">
+      <SEO 
+        title="Armazém Skate Shop - Surf e Skate"
+        description="A melhor loja de surf e skate do Brasil. Pranchas, shapes, acessórios e vestuário das melhores marcas. Frete grátis acima de R$299."
+      />
+      {/* Hero Carrossel Section */}
+      <section ref={heroSwipeRef} className="relative h-[500px] sm:h-[600px] lg:h-[700px] flex items-center justify-center overflow-hidden group select-none">
+        {/* Slides */}
+        {campaigns.map((campaign, index) => (
+          <div
+            key={campaign.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <img
+              src={optimizeHeroImage(campaign.image)}
+              alt={campaign.title}
+              className="w-full h-full object-cover"
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-900/70 to-transparent"></div>
+          </div>
+        ))}
+
+        {/* Botões de navegação */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 sm:p-3 transition-all opacity-0 group-hover:opacity-100 z-10"
+          aria-label="Anterior"
+        >
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 sm:p-3 transition-all opacity-0 group-hover:opacity-100 z-10"
+          aria-label="Próximo"
+        >
+          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+        </button>
+
+        {/* Indicadores */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {campaigns.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`h-2 rounded-full transition-all ${
+                index === currentSlide
+                  ? 'w-8 bg-white'
+                  : 'w-2 bg-white/50 hover:bg-white/70'
+              }`}
+              aria-label={`Ir para slide ${index + 1}`}
+            />
+          ))}
+        </div>
+        <div className="relative container mx-auto px-4 text-white">
+          <div className="max-w-2xl animate-slide-in-up">
+            {activeCampaign.subtitle && (
+              <div className="mb-2 flex items-center gap-2">
+                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
+                  {activeCampaign.subtitle}
+                </span>
+              </div>
+            )}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-4">
+              {activeCampaign.title}
+            </h1>
+            <p className="text-lg sm:text-xl md:text-2xl mb-6 sm:mb-8 text-gray-100">
+              {activeCampaign.description}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link to="/produtos" className="btn-primary">
+                Compre Agora
+              </Link>
+              <Link to="/sobre" className="btn-outline bg-white/10 backdrop-blur-sm border-white text-white hover:bg-white hover:text-dark-600">
+                Conheça Nossa História
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Info Banner */}
+      <Suspense fallback={<div className="py-12 bg-white text-center">Carregando...</div>}>
+        <InfoBanner />
+      </Suspense>
+
+      {/* Categories Carousel */}
+      <Suspense fallback={<div className="py-8 bg-white text-center">Carregando categorias...</div>}>
+        <CategoryCarousel />
+      </Suspense>
+
+      {/* News Banner */}
+      <Suspense fallback={<div className="py-8 bg-white text-center">Carregando...</div>}>
+        <NewsBanner />
+      </Suspense>
+
+      {/* Featured Products */}
+      <section className="pt-6 pb-8 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-4 sm:mb-6 px-4">
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 mb-4">
+              Promoções
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+              Aproveite as melhores ofertas e descontos especiais
+            </p>
+          </div>
+          
+          {/* Carrossel de Produtos em Destaque - Largura total */}
+          <div className="px-4 lg:px-8">
+            <FeaturedProductsCarousel products={featuredProducts} />
+          </div>
+          
+          <div className="text-center mt-10 px-4">
+            <Link to="/produtos" className="btn-primary inline-flex items-center gap-2">
+              Ver Todos os Produtos
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Carrossel de Marcas */}
+      <Suspense fallback={<div className="py-16 bg-gray-50 text-center">Carregando marcas...</div>}>
+        <BrandsCarousel />
+      </Suspense>
+
+      {/* Drops/Collections Section */}
+      <section className="py-16 bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-block mb-4">
+              <span className="text-xs sm:text-sm font-bold tracking-[0.3em] uppercase text-gray-400">
+                Exclusivo
+              </span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-heading font-bold mb-4">
+              Drops da Loja
+            </h2>
+            <p className="text-gray-300 max-w-2xl mx-auto text-sm sm:text-base">
+              Coleções exclusivas das melhores marcas. Estoque limitado.
+            </p>
+          </div>
+          {/* Grid: Mobile 2 colunas, Tablet 3, Desktop 4 */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {drops.map(drop => (
+              <Link 
+                key={drop.id} 
+                to={`/produtos?brand=${encodeURIComponent(drop.brand)}`}
+                className="card group cursor-pointer hover:shadow-2xl transition-all duration-300 bg-white overflow-hidden border-2 border-transparent hover:border-white"
+              >
+                <div className="relative overflow-hidden aspect-[4/5]">
+                  <img
+                    src={drop.image}
+                    alt={drop.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  
+                  {/* Overlay escuro */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                  
+                  {/* Drop Number - Responsivo */}
+                  <div className="absolute top-2 left-2 sm:top-4 sm:left-4">
+                    <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white/20 leading-none">
+                      #{drop.dropNumber}
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
+                    <span className={`
+                      px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider backdrop-blur-md
+                      ${drop.status === 'Disponível' ? 'bg-green-500/90 text-white' : ''}
+                      ${drop.status === 'Em Breve' ? 'bg-yellow-500/90 text-black' : ''}
+                      ${drop.status === 'Esgotado' ? 'bg-red-500/90 text-white' : ''}
+                      ${drop.status === 'Últimas Unidades' ? 'bg-orange-500/90 text-white' : ''}
+                    `}>
+                      {drop.status}
+                    </span>
+                  </div>
+
+                  {/* Informações sobre a imagem */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6">
+                    <div className="text-white">
+                      <div className="text-xs font-bold tracking-[0.15em] uppercase mb-1 sm:mb-2 text-gray-300 truncate">
+                        {drop.subtitle}
+                      </div>
+                      <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-heading font-black mb-1 leading-tight">
+                        {drop.title}
+                      </h3>
+                      <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Package className="w-3 h-3 sm:w-4 sm:h-4" />
+                          {drop.itemCount} {drop.itemCount === 1 ? 'item' : 'itens'}
+                        </span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="font-bold whitespace-nowrap text-xs sm:text-sm">
+                          R$ {drop.startPrice.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 sm:p-4 md:p-5 bg-white">
+                  {/* Descrição */}
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2 leading-relaxed">
+                    {drop.description}
+                  </p>
+
+                  {/* Categoria e Data */}
+                  <div className="flex items-center justify-between text-[10px] sm:text-xs text-gray-500 mb-3 sm:mb-4 gap-2">
+                    <span className={`
+                      px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-semibold text-[10px] sm:text-xs whitespace-nowrap
+                      ${drop.colorTheme === 'blue' ? 'bg-blue-100 text-blue-700' : ''}
+                      ${drop.colorTheme === 'orange' ? 'bg-orange-100 text-orange-700' : ''}
+                      ${drop.colorTheme === 'green' ? 'bg-green-100 text-green-700' : ''}
+                      ${drop.colorTheme === 'purple' ? 'bg-purple-100 text-purple-700' : ''}
+                    `}>
+                      {drop.category}
+                    </span>
+                    <span className="text-[10px] sm:text-xs whitespace-nowrap">
+                      {drop.releaseDate}
+                    </span>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-gray-100">
+                    <span className="text-gray-900 font-bold text-xs sm:text-sm uppercase tracking-wide group-hover:text-black transition-colors">
+                      Ver Coleção
+                    </span>
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-900 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default Home;

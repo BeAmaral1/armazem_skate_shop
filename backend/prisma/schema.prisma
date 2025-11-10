@@ -1,0 +1,381 @@
+// Prisma Schema para Armazém Skate Shop
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS ====================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  cpf           String?   @unique
+  role          Role      @default(CUSTOMER)
+  emailVerified Boolean   @default(false)
+  active        Boolean   @default(true)
+  
+  // Relacionamentos
+  addresses     Address[]
+  orders        Order[]
+  wishlist      Wishlist[]
+  cart          Cart?
+  reviews       Review[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([email])
+  @@index([cpf])
+  @@map("users")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  SUPER_ADMIN
+}
+
+// ==================== ADDRESSES ====================
+
+model Address {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name         String   // Ex: "Casa", "Trabalho"
+  zipCode      String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String
+  country      String   @default("Brasil")
+  
+  isDefault    Boolean  @default(false)
+  
+  orders       Order[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ==================== PRODUCTS ====================
+
+model Product {
+  id            String    @id @default(uuid())
+  name          String
+  slug          String    @unique
+  description   String    @db.Text
+  price         Float
+  oldPrice      Float?
+  stock         Int       @default(0)
+  sku           String    @unique
+  
+  category      String
+  subcategory   String?
+  brand         String
+  
+  images        String[]  // Array de URLs
+  sizes         String[]
+  colors        String[]
+  
+  featured      Boolean   @default(false)
+  active        Boolean   @default(true)
+  
+  // SEO
+  metaTitle     String?
+  metaDescription String?
+  
+  // Relacionamentos
+  reviews       Review[]
+  wishlist      Wishlist[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([slug])
+  @@index([category])
+  @@index([brand])
+  @@index([featured])
+  @@map("products")
+}
+
+// ==================== REVIEWS ====================
+
+model Review {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  rating      Int      // 1-5
+  title       String?
+  comment     String?  @db.Text
+  
+  verified    Boolean  @default(false) // Compra verificada
+  helpful     Int      @default(0)     // Quantas pessoas acharam útil
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([productId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+// ==================== CART ====================
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  items     CartItem[]
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity  Int      @default(1)
+  size      String?
+  color     String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+// ==================== WISHLIST ====================
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlist")
+}
+
+// ==================== ORDERS ====================
+
+model Order {
+  id              String        @id @default(uuid())
+  orderNumber     String        @unique
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  
+  // Dados do comprador (para guest checkout)
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
+  customerCpf     String?
+  
+  // Items
+  items           OrderItem[]
+  
+  // Valores
+  subtotal        Float
+  shipping        Float
+  discount        Float         @default(0)
+  total           Float
+  
+  // Status
+  status          OrderStatus   @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod?
+  
+  // Pagamento - Mercado Pago (PIX/Boleto)
+  mpPaymentId     String?       @unique
+  mpStatus        String?
+  
+  // Pagamento - PagBank (Cartão)
+  pbOrderId       String?       @unique
+  pbChargeId      String?
+  pbStatus        String?
+  
+  // Dados de pagamento (JSON flexível)
+  paymentData     Json?
+  
+  // Endereço
+  addressId       String
+  shippingAddress Address       @relation(fields: [addressId], references: [id])
+  
+  // Envio
+  trackingCode    String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  
+  // Cancelamento
+  cancelledAt     DateTime?
+  cancelReason    String?
+  
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@index([paymentStatus])
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String  @id @default(uuid())
+  orderId      String
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId    String
+  product      Product @relation(fields: [productId], references: [id])
+  
+  productName  String
+  productImage String
+  productSku   String
+  
+  quantity     Int
+  price        Float
+  size         String?
+  color        String?
+  
+  subtotal     Float
+  
+  createdAt    DateTime @default(now())
+  
+  @@index([orderId])
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  PENDING       // Aguardando pagamento
+  CONFIRMED     // Pagamento confirmado
+  PROCESSING    // Em preparação
+  SHIPPED       // Enviado
+  DELIVERED     // Entregue
+  CANCELLED     // Cancelado
+  REFUNDED      // Reembolsado
+}
+
+enum PaymentStatus {
+  PENDING       // Aguardando
+  APPROVED      // Aprovado
+  REJECTED      // Rejeitado
+  REFUNDED      // Reembolsado
+  CANCELLED     // Cancelado
+}
+
+enum PaymentMethod {
+  PIX
+  BOLETO
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+// ==================== PAYMENT LOGS ====================
+
+model PaymentLog {
+  id            String   @id @default(uuid())
+  orderId       String?
+  
+  gateway       String   // "mercadopago" | "pagbank"
+  method        String   // "pix" | "boleto" | "credit_card"
+  
+  event         String   // "created" | "approved" | "rejected" | "webhook"
+  status        String
+  
+  request       Json?    // Request enviado
+  response      Json?    // Response recebido
+  
+  errorMessage  String?  @db.Text
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([orderId])
+  @@index([gateway])
+  @@index([createdAt])
+  @@map("payment_logs")
+}
+
+// ==================== WEBHOOKS LOG ====================
+
+model WebhookLog {
+  id          String   @id @default(uuid())
+  source      String   // "mercadopago" | "pagbank"
+  event       String
+  
+  payload     Json
+  headers     Json?
+  
+  processed   Boolean  @default(false)
+  error       String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([source])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("webhook_logs")
+}
+
+// ==================== SYSTEM LOGS ====================
+
+model SystemLog {
+  id          String   @id @default(uuid())
+  level       LogLevel // INFO, WARN, ERROR
+  module      String   // "payment", "order", "auth", etc
+  action      String
+  
+  message     String   @db.Text
+  data        Json?
+  
+  userId      String?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([level])
+  @@index([module])
+  @@index([createdAt])
+  @@map("system_logs")
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
