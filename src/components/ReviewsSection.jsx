@@ -37,7 +37,7 @@ const ReviewsSection = ({ productId }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl sm:text-2xl font-heading font-bold text-gray-900 flex items-center gap-3">
-          <Star className="w-7 h-7 sm:w-8 sm:h-8" />
+          <Star className="hidden sm:block w-7 h-7 sm:w-8 sm:h-8" />
           Avaliações dos Clientes
         </h2>
         <button
