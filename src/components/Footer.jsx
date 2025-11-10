@@ -47,16 +47,16 @@ const Footer = () => {
               </div>
             </div>
             <p className="text-sm mb-4 leading-relaxed">
-              Onde o asfalto encontra a onda. Sua loja completa de surf e skate desde 2010.
+              O destino certo para quem respira surf e skate. Equipamentos, acessórios e lifestyle desde 2010.
             </p>
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-gray-400" />
-                <span className="text-xs">Riders desde 2010</span>
+                <span className="text-xs">Sua loja desde 2010</span>
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-gray-400" />
-                <span className="text-xs">Equipamentos Pro Level</span>
+                <span className="text-xs">Marcas Premium</span>
               </div>
             </div>
             <div>
@@ -185,11 +185,8 @@ const Footer = () => {
             <a href="#" className="hover:text-gray-400 transition-colors">Rastreio de Pedidos</a>
           </div>
           <div className="flex justify-center items-center gap-2 text-xs text-gray-500">
-            <Waves className="w-4 h-4 text-dark-600" />
-            <span>Desenvolvido com</span>
-            <span className="text-gray-500">❤️</span>
-            <span>para riders</span>
-            <Zap className="w-4 h-4 text-dark-600" />
+            <span>Desenvolvido por</span>
+            <span className="font-semibold text-dark-600">Bervion</span>
           </div>
         </div>
       </div>

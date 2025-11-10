@@ -82,8 +82,8 @@ const Home = () => {
     },
     {
       id: 'padrao',
-      title: 'Onde o asfalto encontra a onda',
-      subtitle: '',
+      title: 'Armazém Skate Shop',
+      subtitle: 'O destino certo para riders',
       description: 'As melhores marcas de surf e skate em um só lugar',
       image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=1920&q=80',
       active: false,
