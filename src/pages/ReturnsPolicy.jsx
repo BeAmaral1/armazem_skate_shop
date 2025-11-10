@@ -5,13 +5,13 @@ import SEO from '../components/SEO';
 
 const ReturnsPolicy = () => {
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 md:py-12">
       <SEO 
         title="Trocas e Devoluções - Armazém Skate Shop"
         description="Política de trocas e devoluções. Garantia de satisfação em todas as compras."
       />
       
-      <div className="container mx-auto px-4 max-w-4xl">
+      <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
         {/* Breadcrumb */}
         <Link to="/" className="inline-flex items-center gap-2 text-dark-600 hover:text-dark-900 mb-6">
           <ArrowLeft className="w-4 h-4" />
@@ -19,46 +19,46 @@ const ReturnsPolicy = () => {
         </Link>
 
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-dark-100 rounded-full flex items-center justify-center">
-              <RefreshCw className="w-8 h-8 text-dark-600" />
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-dark-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-dark-600" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-dark-900">Trocas e Devoluções</h1>
-              <p className="text-gray-600">Sua satisfação é nossa prioridade</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-dark-900 leading-tight">Trocas e Devoluções</h1>
+              <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Sua satisfação é nossa prioridade</p>
             </div>
           </div>
         </div>
 
         {/* Prazo */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow p-6 text-center">
-            <Clock className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-            <h3 className="font-bold text-lg mb-2">30 Dias</h3>
-            <p className="text-sm text-gray-600">Prazo para trocas e devoluções</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-white rounded-xl shadow p-4 sm:p-6 text-center">
+            <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-dark-600 mx-auto mb-2 sm:mb-3" />
+            <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">30 Dias</h3>
+            <p className="text-xs sm:text-sm text-gray-600">Prazo para trocas</p>
           </div>
-          <div className="bg-white rounded-xl shadow p-6 text-center">
-            <Package className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-            <h3 className="font-bold text-lg mb-2">Frete Grátis</h3>
-            <p className="text-sm text-gray-600">Na primeira troca</p>
+          <div className="bg-white rounded-xl shadow p-4 sm:p-6 text-center">
+            <Package className="w-10 h-10 sm:w-12 sm:h-12 text-dark-600 mx-auto mb-2 sm:mb-3" />
+            <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">Frete Grátis</h3>
+            <p className="text-xs sm:text-sm text-gray-600">Na primeira troca</p>
           </div>
-          <div className="bg-white rounded-xl shadow p-6 text-center">
-            <Shield className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-            <h3 className="font-bold text-lg mb-2">100% Seguro</h3>
-            <p className="text-sm text-gray-600">Garantia de reembolso</p>
+          <div className="bg-white rounded-xl shadow p-4 sm:p-6 text-center">
+            <Shield className="w-10 h-10 sm:w-12 sm:h-12 text-dark-600 mx-auto mb-2 sm:mb-3" />
+            <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">100% Seguro</h3>
+            <p className="text-xs sm:text-sm text-gray-600">Garantia de reembolso</p>
           </div>
         </div>
 
         {/* Conteúdo */}
-        <div className="bg-white rounded-xl shadow-lg p-8 space-y-8">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
           {/* Política de Troca */}
           <section>
-            <h2 className="text-2xl font-bold text-dark-900 mb-4 flex items-center gap-2">
-              <RefreshCw className="w-6 h-6 text-dark-600" />
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-dark-900 mb-3 sm:mb-4 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 text-dark-600" />
               Política de Troca
             </h2>
-            <div className="space-y-3 text-gray-700">
+            <div className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-700">
               <p>
                 <strong>Prazo:</strong> Você tem até 30 dias após o recebimento para solicitar a troca.
               </p>
@@ -68,7 +68,7 @@ const ReturnsPolicy = () => {
               <p>
                 <strong>Motivos aceitos:</strong>
               </p>
-              <ul className="list-disc list-inside ml-4 space-y-2">
+              <ul className="list-disc list-inside ml-2 sm:ml-4 space-y-1 sm:space-y-2">
                 <li>Tamanho incorreto</li>
                 <li>Cor diferente do pedido</li>
                 <li>Defeito de fabricação</li>
