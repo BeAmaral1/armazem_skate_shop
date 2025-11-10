@@ -50,6 +50,8 @@ const FAQ = lazy(() => import('./pages/FAQ'));
 const Referrals = lazy(() => import('./pages/Referrals'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const ReturnsPolicy = lazy(() => import('./pages/ReturnsPolicy'));
+const OrderTracking = lazy(() => import('./pages/OrderTracking'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -112,6 +114,8 @@ function App() {
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/termos-uso" element={<TermsOfService />} />
                   <Route path="/politica-privacidade" element={<PrivacyPolicy />} />
+                  <Route path="/trocas-devolucoes" element={<ReturnsPolicy />} />
+                  <Route path="/rastreio" element={<OrderTracking />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/esqueceu-senha" element={<ForgotPassword />} />
                   <Route path="/redefinir-senha/:token" element={<ResetPassword />} />

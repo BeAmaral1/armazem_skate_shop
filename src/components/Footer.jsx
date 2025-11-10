@@ -175,14 +175,14 @@ const Footer = () => {
         {/* Bottom */}
         <div className="mt-8 pt-6 border-t border-gray-800 text-center">
           <p className="text-sm text-gray-400 mb-3">&copy; {currentYear} Armazem Skate Shop. Todos os direitos reservados.</p>
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-4 text-xs sm:text-sm mb-4">
+          <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4 text-xs sm:text-sm mb-4">
             <Link to="/politica-privacidade" className="hover:text-gray-400 transition-colors">Política de Privacidade</Link>
-            <span className="text-gray-600">•</span>
+            <span className="text-gray-500 select-none">•</span>
             <Link to="/termos-uso" className="hover:text-gray-400 transition-colors">Termos de Uso</Link>
-            <span className="text-gray-600">•</span>
-            <a href="#" className="hover:text-gray-400 transition-colors">Trocas e Devoluções</a>
-            <span className="text-gray-600">•</span>
-            <a href="#" className="hover:text-gray-400 transition-colors">Rastreio de Pedidos</a>
+            <span className="text-gray-500 select-none">•</span>
+            <Link to="/trocas-devolucoes" className="hover:text-gray-400 transition-colors">Trocas e Devoluções</Link>
+            <span className="text-gray-500 select-none">•</span>
+            <Link to="/rastreio" className="hover:text-gray-400 transition-colors">Rastreio de Pedidos</Link>
           </div>
           <div className="flex justify-center items-center gap-2 text-xs text-gray-500">
             <span>Desenvolvido por</span>
