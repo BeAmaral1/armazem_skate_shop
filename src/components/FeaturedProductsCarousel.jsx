@@ -3,41 +3,101 @@ import ProductCard from './ProductCard';
 
 const FeaturedProductsCarousel = ({ products }) => {
   const carouselRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+  const rafId = useRef(null);
+  const momentum = useRef(0);
+  const lastX = useRef(0);
+  const lastTime = useRef(0);
+
+  // Atualização suave do scroll com RAF
+  const updateScroll = () => {
+    const container = carouselRef.current;
+    if (!container || !isDragging.current) return;
+
+    rafId.current = requestAnimationFrame(updateScroll);
+  };
 
   // Handlers para arrastar
   const handleMouseDown = (e) => {
     const container = carouselRef.current;
     if (!container) return;
-    setIsDragging(true);
-    setStartX(e.pageX - container.offsetLeft);
-    setScrollLeft(container.scrollLeft);
+    
+    isDragging.current = true;
+    startX.current = e.pageX - container.offsetLeft;
+    scrollLeft.current = container.scrollLeft;
+    lastX.current = e.pageX;
+    lastTime.current = Date.now();
+    momentum.current = 0;
+    
     container.style.cursor = 'grabbing';
+    container.style.scrollBehavior = 'auto';
+    e.preventDefault();
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging.current) return;
     e.preventDefault();
+    
     const container = carouselRef.current;
     if (!container) return;
+    
     const x = e.pageX - container.offsetLeft;
-    const walk = (x - startX) * 2;
-    container.scrollLeft = scrollLeft - walk;
+    const walk = (x - startX.current) * 1.5; // Sensibilidade
+    
+    // Usar requestAnimationFrame para scroll suave
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    
+    rafId.current = requestAnimationFrame(() => {
+      container.scrollLeft = scrollLeft.current - walk;
+    });
+    
+    // Calcular momentum para inertia
+    const now = Date.now();
+    const dt = now - lastTime.current;
+    if (dt > 0) {
+      momentum.current = (e.pageX - lastX.current) / dt;
+    }
+    lastX.current = e.pageX;
+    lastTime.current = now;
+  };
+
+  const applyMomentum = () => {
+    const container = carouselRef.current;
+    if (!container || Math.abs(momentum.current) < 0.1) return;
+    
+    momentum.current *= 0.95; // Fricção
+    container.scrollLeft -= momentum.current * 16; // 16ms per frame
+    
+    requestAnimationFrame(applyMomentum);
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    if (!isDragging.current) return;
+    
+    isDragging.current = false;
     const container = carouselRef.current;
-    if (container) container.style.cursor = 'grab';
+    
+    if (container) {
+      container.style.cursor = 'grab';
+      container.style.scrollBehavior = 'smooth';
+    }
+    
+    if (rafId.current) {
+      cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    }
+    
+    // Aplicar momentum/inertia
+    if (Math.abs(momentum.current) > 0.5) {
+      applyMomentum();
+    }
   };
 
   const handleMouseLeave = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      const container = carouselRef.current;
-      if (container) container.style.cursor = 'grab';
+    if (isDragging.current) {
+      handleMouseUp();
     }
   };
 
@@ -45,22 +105,62 @@ const FeaturedProductsCarousel = ({ products }) => {
   const handleTouchStart = (e) => {
     const container = carouselRef.current;
     if (!container) return;
-    setIsDragging(true);
-    setStartX(e.touches[0].pageX - container.offsetLeft);
-    setScrollLeft(container.scrollLeft);
+    
+    isDragging.current = true;
+    startX.current = e.touches[0].pageX - container.offsetLeft;
+    scrollLeft.current = container.scrollLeft;
+    lastX.current = e.touches[0].pageX;
+    lastTime.current = Date.now();
+    momentum.current = 0;
+    
+    container.style.scrollBehavior = 'auto';
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging.current) return;
+    
     const container = carouselRef.current;
     if (!container) return;
+    
     const x = e.touches[0].pageX - container.offsetLeft;
-    const walk = (x - startX) * 2;
-    container.scrollLeft = scrollLeft - walk;
+    const walk = (x - startX.current) * 1.5;
+    
+    // RAF para scroll suave
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    
+    rafId.current = requestAnimationFrame(() => {
+      container.scrollLeft = scrollLeft.current - walk;
+    });
+    
+    // Calcular momentum
+    const now = Date.now();
+    const dt = now - lastTime.current;
+    if (dt > 0) {
+      momentum.current = (e.touches[0].pageX - lastX.current) / dt;
+    }
+    lastX.current = e.touches[0].pageX;
+    lastTime.current = now;
   };
 
   const handleTouchEnd = () => {
-    setIsDragging(false);
+    if (!isDragging.current) return;
+    
+    isDragging.current = false;
+    const container = carouselRef.current;
+    
+    if (container) {
+      container.style.scrollBehavior = 'smooth';
+    }
+    
+    if (rafId.current) {
+      cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    }
+    
+    // Aplicar momentum
+    if (Math.abs(momentum.current) > 0.5) {
+      applyMomentum();
+    }
   };
 
   return (
@@ -73,7 +173,9 @@ const FeaturedProductsCarousel = ({ products }) => {
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none',
           cursor: 'grab',
-          scrollBehavior: 'smooth'
+          scrollBehavior: 'smooth',
+          WebkitOverflowScrolling: 'touch',
+          willChange: 'scroll-position'
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
