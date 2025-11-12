@@ -59,7 +59,7 @@ export const RecentlyViewedProvider = ({ children }) => {
       category: product.category,
       rating: product.rating,
       reviews: product.reviews,
-      inStock: product.inStock,
+      inStock: product.stock > 0,
       viewedAt: new Date(),
     };
 
