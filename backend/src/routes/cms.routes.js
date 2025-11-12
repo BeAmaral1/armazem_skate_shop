@@ -1,6 +1,6 @@
 import express from 'express';
 import { prisma } from '../config/database.js';
-import { authenticateToken, isAdmin } from '../middlewares/auth.middleware.js';
+import { authenticate, isAdmin } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
@@ -48,7 +48,7 @@ router.get('/content/:page', async (req, res) => {
 });
 
 // Criar/Atualizar conteúdo (ADMIN)
-router.post('/content', authenticateToken, isAdmin, async (req, res) => {
+router.post('/content', authenticate, isAdmin, async (req, res) => {
   try {
     const { page, section, key, value, type, language = 'pt-BR' } = req.body;
 
@@ -88,7 +88,7 @@ router.post('/content', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Atualizar múltiplos conteúdos de uma vez (ADMIN)
-router.put('/content/bulk', authenticateToken, isAdmin, async (req, res) => {
+router.put('/content/bulk', authenticate, isAdmin, async (req, res) => {
   try {
     const { contents } = req.body; // Array de { page, section, key, value, type }
 
@@ -132,7 +132,7 @@ router.put('/content/bulk', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Deletar conteúdo (ADMIN)
-router.delete('/content/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/content/:id', authenticate, isAdmin, async (req, res) => {
   try {
     await prisma.pageContent.delete({
       where: { id: req.params.id }
@@ -182,7 +182,7 @@ router.get('/settings', async (req, res) => {
 });
 
 // Atualizar configuração (ADMIN)
-router.put('/settings/:key', authenticateToken, isAdmin, async (req, res) => {
+router.put('/settings/:key', authenticate, isAdmin, async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;
@@ -239,7 +239,7 @@ router.get('/banners', async (req, res) => {
 });
 
 // Criar banner (ADMIN)
-router.post('/banners', authenticateToken, isAdmin, async (req, res) => {
+router.post('/banners', authenticate, isAdmin, async (req, res) => {
   try {
     const banner = await prisma.banner.create({
       data: req.body
@@ -258,7 +258,7 @@ router.post('/banners', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Atualizar banner (ADMIN)
-router.put('/banners/:id', authenticateToken, isAdmin, async (req, res) => {
+router.put('/banners/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const banner = await prisma.banner.update({
       where: { id: req.params.id },
@@ -278,7 +278,7 @@ router.put('/banners/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Deletar banner (ADMIN)
-router.delete('/banners/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/banners/:id', authenticate, isAdmin, async (req, res) => {
   try {
     await prisma.banner.delete({
       where: { id: req.params.id }
@@ -324,7 +324,7 @@ router.get('/faqs', async (req, res) => {
 });
 
 // Criar FAQ (ADMIN)
-router.post('/faqs', authenticateToken, isAdmin, async (req, res) => {
+router.post('/faqs', authenticate, isAdmin, async (req, res) => {
   try {
     const faq = await prisma.faq.create({
       data: req.body
@@ -343,7 +343,7 @@ router.post('/faqs', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Atualizar FAQ (ADMIN)
-router.put('/faqs/:id', authenticateToken, isAdmin, async (req, res) => {
+router.put('/faqs/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const faq = await prisma.faq.update({
       where: { id: req.params.id },
@@ -363,7 +363,7 @@ router.put('/faqs/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Deletar FAQ (ADMIN)
-router.delete('/faqs/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/faqs/:id', authenticate, isAdmin, async (req, res) => {
   try {
     await prisma.faq.delete({
       where: { id: req.params.id }
@@ -463,7 +463,7 @@ router.post('/coupons/validate', async (req, res) => {
 });
 
 // Listar cupons (ADMIN)
-router.get('/coupons', authenticateToken, isAdmin, async (req, res) => {
+router.get('/coupons', authenticate, isAdmin, async (req, res) => {
   try {
     const coupons = await prisma.coupon.findMany({
       orderBy: { createdAt: 'desc' }
@@ -482,7 +482,7 @@ router.get('/coupons', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Criar cupom (ADMIN)
-router.post('/coupons', authenticateToken, isAdmin, async (req, res) => {
+router.post('/coupons', authenticate, isAdmin, async (req, res) => {
   try {
     const data = {
       ...req.body,
@@ -510,7 +510,7 @@ router.post('/coupons', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Atualizar cupom (ADMIN)
-router.put('/coupons/:id', authenticateToken, isAdmin, async (req, res) => {
+router.put('/coupons/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const coupon = await prisma.coupon.update({
       where: { id: req.params.id },
@@ -530,7 +530,7 @@ router.put('/coupons/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Deletar cupom (ADMIN)
-router.delete('/coupons/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/coupons/:id', authenticate, isAdmin, async (req, res) => {
   try {
     await prisma.coupon.delete({
       where: { id: req.params.id }

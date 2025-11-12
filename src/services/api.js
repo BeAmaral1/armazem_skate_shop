@@ -154,7 +154,17 @@ export const authService = {
   },
 
   getProfile: async () => {
-    const response = await api.get('/auth/me');
+    const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
+  updateProfile: async (updates) => {
+    const response = await api.put('/auth/profile', updates);
+    return response.data;
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const response = await api.put('/auth/password', { currentPassword, newPassword });
     return response.data;
   }
 };
@@ -317,7 +327,8 @@ export const adminService = {
   },
 
   updateUserStatus: async (userId, status) => {
-    const response = await api.patch(`/admin/users/${userId}/status`, { status });
+    // Backend espera { active: boolean }
+    const response = await api.patch(`/admin/users/${userId}/status`, { active: status });
     return response.data;
   },
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, RefreshCw, Search, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, RefreshCw, Search, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { productService } from '../../services/api';
 
 const ProductManager = () => {
@@ -11,7 +11,6 @@ const ProductManager = () => {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    slug: '',
     description: '',
     price: '',
     oldPrice: '',
@@ -20,16 +19,16 @@ const ProductManager = () => {
     category: '',
     subcategory: '',
     brand: '',
-    images: [''],
-    sizes: [],
-    colors: [],
-    features: [''],
-    specifications: [{ label: '', value: '' }],
+    images: [],
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: ['Preto', 'Branco'],
     metaTitle: '',
     metaDescription: '',
     featured: false,
     active: true
   });
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreview, setImagePreview] = useState([]);
 
   // Carregar produtos da API
   useEffect(() => {
@@ -40,7 +39,7 @@ const ProductManager = () => {
     try {
       setLoading(true);
       setError('');
-      const response = await productService.getAll();
+      const response = await productService.getAll({ includeInactive: true, limit: 200 });
       setProducts(response.products || []);
     } catch (err) {
       console.error('Erro ao carregar produtos:', err);
@@ -53,13 +52,24 @@ const ProductManager = () => {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
-      ...product,
-      images: product.images || [''],
-      sizes: product.sizes || [],
-      colors: product.colors || [],
-      features: product.features || [''],
-      specifications: product.specifications || [{ label: '', value: '' }]
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+      oldPrice: product.oldPrice || '',
+      stock: product.stock || '',
+      sku: product.sku || '',
+      category: product.category || '',
+      subcategory: product.subcategory || '',
+      brand: product.brand || '',
+      images: product.images || [],
+      sizes: product.sizes || ['P', 'M', 'G', 'GG'],
+      colors: product.colors || ['Preto', 'Branco'],
+      metaTitle: product.metaTitle || '',
+      metaDescription: product.metaDescription || '',
+      featured: product.featured || false,
+      active: product.active !== undefined ? product.active : true
     });
+    setImagePreview(product.images || []);
     setShowForm(true);
   };
 
@@ -68,7 +78,6 @@ const ProductManager = () => {
     setEditingProduct(null);
     setFormData({
       name: '',
-      slug: '',
       description: '',
       price: '',
       oldPrice: '',
@@ -77,16 +86,17 @@ const ProductManager = () => {
       category: '',
       subcategory: '',
       brand: '',
-      images: [''],
-      sizes: [],
-      colors: [],
-      features: [''],
-      specifications: [{ label: '', value: '' }],
+      images: [],
+      sizes: ['P', 'M', 'G', 'GG'],
+      colors: ['Preto', 'Branco'],
       metaTitle: '',
       metaDescription: '',
       featured: false,
       active: true
     });
+    setImageFiles([]);
+    setImagePreview([]);
+    setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -96,31 +106,46 @@ const ProductManager = () => {
       setLoading(true);
       setError('');
 
+      // Validações
+      if (!formData.name || !formData.description || !formData.price || !formData.sku || !formData.category || !formData.brand) {
+        throw new Error('Preencha todos os campos obrigatórios');
+      }
+
       // Preparar dados (converter strings para números)
       const productData = {
-        ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
-        stock: parseInt(formData.stock),
-        images: formData.images.filter(img => img.trim() !== ''),
-        features: formData.features.filter(f => f.trim() !== ''),
-        specifications: formData.specifications.filter(s => s.label && s.value)
+        stock: parseInt(formData.stock) || 0,
+        sku: formData.sku.trim(),
+        category: formData.category.trim(),
+        subcategory: formData.subcategory ? formData.subcategory.trim() : null,
+        brand: formData.brand.trim(),
+        images: imagePreview.length > 0 ? imagePreview : [],
+        sizes: formData.sizes || [],
+        colors: formData.colors || [],
+        metaTitle: formData.metaTitle || formData.name,
+        metaDescription: formData.metaDescription || formData.description,
+        featured: formData.featured || false,
+        active: formData.active !== undefined ? formData.active : true
       };
 
       if (editingProduct) {
         await productService.update(editingProduct.id, productData);
-        alert('Produto atualizado com sucesso!');
+        alert('✅ Produto atualizado com sucesso!');
       } else {
         await productService.create(productData);
-        alert('Produto criado com sucesso!');
+        alert('✅ Produto criado com sucesso!');
       }
 
       handleCancel();
-      loadProducts(); // Recarregar lista
+      await loadProducts();
     } catch (err) {
       console.error('Erro ao salvar produto:', err);
-      setError('Erro ao salvar produto. Verifique os dados e tente novamente.');
-      alert('Erro ao salvar produto!');
+      const errorMsg = err.response?.data?.error || err.message || 'Erro ao salvar produto';
+      setError(errorMsg);
+      alert('❌ ' + errorMsg);
     } finally {
       setLoading(false);
     }
@@ -144,64 +169,62 @@ const ProductManager = () => {
     }
   };
 
-  const addImageField = () => {
-    setFormData({
-      ...formData,
-      images: [...formData.images, '']
+  // Upload de imagens local
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
     });
+    
+    setImageFiles(prev => [...prev, ...files]);
   };
 
-  const removeImageField = (index) => {
-    setFormData({
-      ...formData,
-      images: formData.images.filter((_, i) => i !== index)
-    });
+  const removeImage = (index) => {
+    setImagePreview(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateImage = (index, value) => {
-    const newImages = [...formData.images];
-    newImages[index] = value;
-    setFormData({ ...formData, images: newImages });
+  // Gerenciar tamanhos
+  const toggleSize = (size) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter(s => s !== size)
+        : [...prev.sizes, size]
+    }));
   };
 
-  const addFeature = () => {
-    setFormData({
-      ...formData,
-      features: [...formData.features, '']
-    });
+  const addCustomSize = (newSize) => {
+    if (newSize && !formData.sizes.includes(newSize)) {
+      setFormData(prev => ({
+        ...prev,
+        sizes: [...prev.sizes, newSize]
+      }));
+    }
   };
 
-  const removeFeature = (index) => {
-    setFormData({
-      ...formData,
-      features: formData.features.filter((_, i) => i !== index)
-    });
+  // Gerenciar cores
+  const toggleColor = (color) => {
+    setFormData(prev => ({
+      ...prev,
+      colors: prev.colors.includes(color)
+        ? prev.colors.filter(c => c !== color)
+        : [...prev.colors, color]
+    }));
   };
 
-  const updateFeature = (index, value) => {
-    const newFeatures = [...formData.features];
-    newFeatures[index] = value;
-    setFormData({ ...formData, features: newFeatures });
-  };
-
-  const addSpecification = () => {
-    setFormData({
-      ...formData,
-      specifications: [...formData.specifications, { label: '', value: '' }]
-    });
-  };
-
-  const removeSpecification = (index) => {
-    setFormData({
-      ...formData,
-      specifications: formData.specifications.filter((_, i) => i !== index)
-    });
-  };
-
-  const updateSpecification = (index, field, value) => {
-    const newSpecs = [...formData.specifications];
-    newSpecs[index][field] = value;
-    setFormData({ ...formData, specifications: newSpecs });
+  const addCustomColor = (newColor) => {
+    if (newColor && !formData.colors.includes(newColor)) {
+      setFormData(prev => ({
+        ...prev,
+        colors: [...prev.colors, newColor]
+      }));
+    }
   };
 
   const filteredProducts = products.filter(p =>
@@ -277,17 +300,7 @@ const ProductManager = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Slug (URL)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-600"
-                  />
-                </div>
+                
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -404,117 +417,58 @@ const ProductManager = () => {
               </div>
             </div>
 
-            {/* Imagens */}
+            {/* Upload de Imagens */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-md font-semibold text-gray-900">Imagens</h3>
-                <button
-                  type="button"
-                  onClick={addImageField}
-                  className="text-sm text-dark-600 hover:text-dark-700 font-medium"
+              <h3 className="text-md font-semibold text-gray-900">Imagens do Produto</h3>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
                 >
-                  + Adicionar Imagem
-                </button>
+                  <Upload className="w-10 h-10 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Clique para selecionar imagens
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, WEBP (múltiplas imagens)
+                    </p>
+                  </div>
+                </label>
               </div>
 
-              {formData.images.map((image, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="url"
-                    value={image}
-                    onChange={(e) => updateImage(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-600"
-                    placeholder="https://..."
-                  />
-                  {formData.images.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeImageField(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
+              {/* Preview das Imagens */}
+              {imagePreview.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {imagePreview.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={img}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
-            {/* Características */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-md font-semibold text-gray-900">Características</h3>
-                <button
-                  type="button"
-                  onClick={addFeature}
-                  className="text-sm text-dark-600 hover:text-dark-700 font-medium"
-                >
-                  + Adicionar Característica
-                </button>
-              </div>
-
-              {formData.features.map((feature, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={feature}
-                    onChange={(e) => updateFeature(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-600"
-                    placeholder="Ex: Madeira canadense 7 camadas"
-                  />
-                  {formData.features.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeFeature(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Especificações Técnicas */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-md font-semibold text-gray-900">Especificações Técnicas</h3>
-                <button
-                  type="button"
-                  onClick={addSpecification}
-                  className="text-sm text-dark-600 hover:text-dark-700 font-medium"
-                >
-                  + Adicionar Especificação
-                </button>
-              </div>
-
-              {formData.specifications.map((spec, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={spec.label}
-                    onChange={(e) => updateSpecification(index, 'label', e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-600"
-                    placeholder="Nome (ex: Largura)"
-                  />
-                  <input
-                    type="text"
-                    value={spec.value}
-                    onChange={(e) => updateSpecification(index, 'value', e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-600"
-                    placeholder="Valor (ex: 8.0)"
-                  />
-                  {formData.specifications.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeSpecification(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
 
             {/* Tamanhos e Cores */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -660,11 +614,17 @@ const ProductManager = () => {
                       <tr key={product.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
+                            {product.images && product.images.length > 0 ? (
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6 text-gray-400" />
+                              </div>
+                            )}
                             <div>
                               <p className="font-medium text-gray-900">{product.name}</p>
                               <p className="text-sm text-gray-500">{product.brand}</p>

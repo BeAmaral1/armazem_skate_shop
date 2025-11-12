@@ -55,7 +55,7 @@ export const RecentlyViewedProvider = ({ children }) => {
       name: product.name,
       price: product.price,
       oldPrice: product.oldPrice,
-      image: product.image,
+      image: (product.images && product.images[0]) || product.image || '/og-image.jpg',
       category: product.category,
       rating: product.rating,
       reviews: product.reviews,

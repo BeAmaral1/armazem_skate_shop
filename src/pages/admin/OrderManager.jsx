@@ -69,48 +69,51 @@ const OrderManager = () => {
   // Estatísticas
   const stats = {
     total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    confirmed: orders.filter(o => o.status === 'confirmed').length,
-    shipped: orders.filter(o => o.status === 'shipped').length,
-    delivered: orders.filter(o => o.status === 'delivered').length,
-    cancelled: orders.filter(o => o.status === 'cancelled').length,
+    pending: orders.filter(o => o.status === 'PENDING').length,
+    confirmed: orders.filter(o => o.status === 'CONFIRMED').length,
+    shipped: orders.filter(o => o.status === 'SHIPPED').length,
+    delivered: orders.filter(o => o.status === 'DELIVERED').length,
+    cancelled: orders.filter(o => o.status === 'CANCELLED').length,
     revenue: orders
-      .filter(o => o.status !== 'cancelled')
+      .filter(o => o.status !== 'CANCELLED')
       .reduce((sum, o) => sum + (o.total || 0), 0)
   };
 
   // Filtrar pedidos
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.user?.name || order.customerName || '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.user?.email || order.customerEmail || '')?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      order.status === statusFilter.toUpperCase();
 
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status) => {
+    const key = String(status || '').toUpperCase();
     const badges = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-blue-100 text-blue-800',
-      shipped: 'bg-purple-100 text-purple-800',
-      delivered: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800'
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      CONFIRMED: 'bg-blue-100 text-blue-800',
+      SHIPPED: 'bg-purple-100 text-purple-800',
+      DELIVERED: 'bg-green-100 text-green-800',
+      CANCELLED: 'bg-red-100 text-red-800'
     };
 
     const labels = {
-      pending: 'Pendente',
-      confirmed: 'Confirmado',
-      shipped: 'Enviado',
-      delivered: 'Entregue',
-      cancelled: 'Cancelado'
+      PENDING: 'Pendente',
+      CONFIRMED: 'Confirmado',
+      SHIPPED: 'Enviado',
+      DELIVERED: 'Entregue',
+      CANCELLED: 'Cancelado'
     };
 
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${badges[status]}`}>
-        {labels[status]}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${badges[key]}`}>
+        {labels[key]}
       </span>
     );
   };
@@ -296,12 +299,12 @@ const OrderManager = () => {
                 filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-medium text-gray-900">{order.code}</span>
+                      <span className="font-medium text-gray-900">{order.orderNumber}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-medium text-gray-900">{order.customer}</p>
-                        <p className="text-sm text-gray-500">{order.email}</p>
+                        <p className="font-medium text-gray-900">{order.user?.name || order.customerName || '-'}</p>
+                        <p className="text-sm text-gray-500">{order.user?.email || order.customerEmail || '-'}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -313,7 +316,7 @@ const OrderManager = () => {
                       {getStatusBadge(order.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.date ? new Date(order.date).toLocaleDateString('pt-BR') : '-'}
+                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
@@ -359,11 +362,11 @@ const OrderManager = () => {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Informações</h3>
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <p><span className="font-medium">Código:</span> {selectedOrder.code}</p>
-                    <p><span className="font-medium">Data:</span> {new Date(selectedOrder.date).toLocaleString('pt-BR')}</p>
+                    <p><span className="font-medium">Código:</span> {selectedOrder.orderNumber}</p>
+                    <p><span className="font-medium">Data:</span> {new Date(selectedOrder.createdAt).toLocaleString('pt-BR')}</p>
                     <p><span className="font-medium">Status:</span> {getStatusBadge(selectedOrder.status)}</p>
-                    {selectedOrder.tracking && (
-                      <p><span className="font-medium">Rastreio:</span> {selectedOrder.tracking}</p>
+                    {selectedOrder.trackingCode && (
+                      <p><span className="font-medium">Rastreio:</span> {selectedOrder.trackingCode}</p>
                     )}
                   </div>
                 </div>
@@ -372,10 +375,9 @@ const OrderManager = () => {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Cliente</h3>
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <p><span className="font-medium">Nome:</span> {selectedOrder.customer}</p>
-                    <p><span className="font-medium">Email:</span> {selectedOrder.email}</p>
-                    <p><span className="font-medium">Telefone:</span> {selectedOrder.phone}</p>
-                    <p><span className="font-medium">Endereço:</span> {selectedOrder.address}</p>
+                    <p><span className="font-medium">Nome:</span> {selectedOrder.user?.name || selectedOrder.customerName || '-'}</p>
+                    <p><span className="font-medium">Email:</span> {selectedOrder.user?.email || selectedOrder.customerEmail || '-'}</p>
+                    <p><span className="font-medium">Telefone:</span> {selectedOrder.customerPhone || '-'}</p>
                   </div>
                 </div>
 
@@ -383,10 +385,10 @@ const OrderManager = () => {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Produtos</h3>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    {selectedOrder.products?.map((product, index) => (
+                    {selectedOrder.items?.map((item, index) => (
                       <div key={index} className="flex justify-between py-2 border-b border-gray-200 last:border-0">
-                        <span>{product.name} x{product.qty}</span>
-                        <span className="font-medium">R$ {(product.price * product.qty).toFixed(2)}</span>
+                        <span>{item.productName} x{item.quantity}</span>
+                        <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between pt-4 mt-4 border-t-2 border-gray-300">
@@ -407,11 +409,11 @@ const OrderManager = () => {
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dark-600"
                   >
-                    <option value="pending">Pendente</option>
-                    <option value="confirmed">Confirmado</option>
-                    <option value="shipped">Enviado</option>
-                    <option value="delivered">Entregue</option>
-                    <option value="cancelled">Cancelado</option>
+                    <option value="PENDING">Pendente</option>
+                    <option value="CONFIRMED">Confirmado</option>
+                    <option value="SHIPPED">Enviado</option>
+                    <option value="DELIVERED">Entregue</option>
+                    <option value="CANCELLED">Cancelado</option>
                   </select>
                 </div>
 

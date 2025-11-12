@@ -11,7 +11,10 @@ import {
   DollarSign,
   ShoppingBag,
   TrendingUp,
-  X
+  X,
+  RefreshCw,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 import { adminService } from '../../services/api';
 
@@ -32,8 +35,36 @@ const CustomerManager = () => {
     try {
       setLoading(true);
       setError('');
-      const response = await adminService.getAllUsers();
-      setCustomers(response.users || []);
+      const [usersResp, ordersResp] = await Promise.all([
+        adminService.getAllUsers(),
+        adminService.getAllOrders({ limit: 1000 })
+      ]);
+
+      const orders = ordersResp.orders || [];
+      const totalsByUser = new Map();
+      const lastByUser = new Map();
+
+      for (const o of orders) {
+        const uid = o.userId || (o.user && o.user.id) || null;
+        if (!uid) continue;
+        totalsByUser.set(uid, (totalsByUser.get(uid) || 0) + (o.total || 0));
+        const d = new Date(o.createdAt).getTime();
+        const prev = lastByUser.get(uid) || 0;
+        if (d > prev) lastByUser.set(uid, d);
+      }
+
+      const mapped = (usersResp.users || []).map(u => ({
+        ...u,
+        status: u.active ? 'active' : 'inactive',
+        joinDate: u.createdAt,
+        totalOrders: u._count?.orders || 0,
+        lastOrder: lastByUser.has(u.id) ? new Date(lastByUser.get(u.id)).toISOString() : null,
+        totalSpent: totalsByUser.get(u.id) || 0,
+        addresses: [],
+        orders: []
+      }));
+
+      setCustomers(mapped);
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
       setError('Erro ao carregar clientes. Tente novamente.');
@@ -43,10 +74,10 @@ const CustomerManager = () => {
     }
   };
 
-  const toggleStatus = async (customerId, currentStatus) => {
+  const toggleStatus = async (customerId, currentActive) => {
     try {
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-      await adminService.updateUserStatus(customerId, newStatus);
+      const newActive = !currentActive;
+      await adminService.updateUserStatus(customerId, newActive);
       alert('Status atualizado com sucesso!');
       loadCustomers(); // Recarregar lista
     } catch (err) {
@@ -65,7 +96,12 @@ const CustomerManager = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR');
+    } catch {
+      return '-';
+    }
   };
 
   const filteredCustomers = customers.filter(customer => {
@@ -75,18 +111,22 @@ const CustomerManager = () => {
       customer.phone.includes(searchTerm) ||
       (customer.cpf && customer.cpf.includes(searchTerm));
 
-    const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' ? customer.active : !customer.active);
 
     return matchesSearch && matchesStatus;
   });
 
+  const totalRevenue = customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+  const totalOrdersCount = customers.reduce((sum, c) => sum + (c.totalOrders || 0), 0);
   const stats = {
     total: customers.length,
-    active: customers.filter(c => c.status === 'active').length,
-    inactive: customers.filter(c => c.status === 'inactive').length,
-    totalRevenue: customers.reduce((sum, c) => sum + c.totalSpent, 0),
-    avgOrders: customers.reduce((sum, c) => sum + c.totalOrders, 0) / customers.length || 0,
-    avgSpent: customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length || 0
+    active: customers.filter(c => c.active).length,
+    inactive: customers.filter(c => !c.active).length,
+    totalRevenue,
+    avgOrders: customers.length ? totalOrdersCount / customers.length : 0,
+    avgSpent: customers.length ? totalRevenue / customers.length : 0
   };
 
   if (loading) {
@@ -220,7 +260,7 @@ const CustomerManager = () => {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => toggleStatus(customer.id)}
+                        onClick={() => toggleStatus(customer.id, customer.active)}
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
                           customer.status === 'active'
                             ? 'bg-green-100 text-green-800'
@@ -369,7 +409,7 @@ const CustomerManager = () => {
               <div>
                 <h3 className="text-md font-semibold text-gray-900 mb-3">Histórico de Pedidos</h3>
                 <div className="space-y-2">
-                  {selectedCustomer.orders.map((order, index) => (
+                  {(selectedCustomer.orders || []).map((order, index) => (
                     <div key={index} className="flex justify-between items-center bg-gray-50 rounded-lg p-3">
                       <div>
                         <p className="font-semibold">{order.code}</p>

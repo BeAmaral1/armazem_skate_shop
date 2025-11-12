@@ -53,10 +53,12 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const ReturnsPolicy = lazy(() => import('./pages/ReturnsPolicy'));
 const OrderTracking = lazy(() => import('./pages/OrderTracking'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const TestAuth = lazy(() => import('./pages/TestAuth'));
+const DebugAuth = lazy(() => import('./pages/DebugAuth'));
 
 // Admin Pages
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
-const AdminDashboard = lazy(() => import('./pages/admin/DashboardImproved'));
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const ContentEditor = lazy(() => import('./pages/admin/ContentEditor'));
 const BannerManager = lazy(() => import('./pages/admin/BannerManager'));
 const CouponManager = lazy(() => import('./pages/admin/CouponManager'));
@@ -131,6 +133,8 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/esqueceu-senha" element={<ForgotPassword />} />
                   <Route path="/redefinir-senha/:token" element={<ResetPassword />} />
+                  <Route path="/test-auth" element={<TestAuth />} />
+                  <Route path="/debug-auth" element={<DebugAuth />} />
                   
                   {/* Rotas Protegidas */}
                   <Route path="/favoritos" element={
@@ -201,7 +205,7 @@ function App() {
                   
                   {/* Admin Routes */}
                   <Route path="/admin" element={
-                    <PrivateRoute requiredRole="admin">
+                    <PrivateRoute requiredRole="ADMIN">
                       <AdminLayout />
                     </PrivateRoute>
                   }>

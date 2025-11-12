@@ -4,11 +4,14 @@ import { Filter, X, ChevronLeft, ChevronRight, SlidersHorizontal, ArrowUpDown } 
 import ProductCard from '../components/ProductCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SEO from '../components/SEO';
-import { products, categories, brands } from '../data/products';
+import { productService } from '../services/api';
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filteredProducts, setFilteredProducts] = useState(products);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
@@ -40,7 +43,31 @@ const Products = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    let result = [...products];
+    let active = true;
+    setLoading(true);
+    setError('');
+    productService
+      .getAll({ limit: 500 })
+      .then((res) => {
+        if (!active) return;
+        setAllProducts(res.products || []);
+      })
+      .catch(() => {
+        if (!active) return;
+        setAllProducts([]);
+        setError('Erro ao carregar produtos');
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let result = [...allProducts];
 
     // Filter by URL category (categoria principal)
     if (activeCategory) {
@@ -124,7 +151,7 @@ const Products = () => {
         result.sort((a, b) => b.rating - a.rating);
         break;
       case 'newest':
-        result.sort((a, b) => b.id - a.id);
+        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
       case 'featured':
       default:
@@ -161,6 +188,16 @@ const Products = () => {
   };
 
   const activeSearch = searchParams.get('busca');
+
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen py-8">
+        <div className="container mx-auto px-4">
+          <p className="text-gray-700">Carregando produtos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">

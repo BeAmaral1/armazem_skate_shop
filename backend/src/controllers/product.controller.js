@@ -13,12 +13,24 @@ class ProductController {
         search, 
         featured,
         limit = 50,
-        offset = 0 
+        offset = 0,
+        active,
+        includeInactive
       } = req.query;
 
-      const where = {
-        active: true
-      };
+      const where = {};
+
+      // Controle de visibilidade de ativos/inativos
+      // includeInactive=true -> não filtra por active
+      // active=false -> apenas inativos
+      // default -> apenas ativos
+      if (includeInactive === 'true') {
+        // sem filtro de active
+      } else if (active === 'false') {
+        where.active = false;
+      } else {
+        where.active = true;
+      }
 
       // Filtros opcionais
       if (category) where.category = category;

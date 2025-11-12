@@ -107,11 +107,17 @@ const Login = () => {
         }
       });
 
-      // Redirecionar para página anterior ou home
-      setTimeout(() => {
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
-      }, 1500);
+      // Aguardar um frame para garantir que o contexto atualizou
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (result.user.role === 'ADMIN' || result.user.role === 'SUPER_ADMIN') {
+            navigate('/admin', { replace: true });
+          } else {
+            const from = location.state?.from?.pathname || '/';
+            navigate(from, { replace: true });
+          }
+        }, 100);
+      });
     } else {
       setToast({
         type: 'error',

@@ -15,7 +15,7 @@ const ProductCard = memo(({ product }) => {
       {/* Image */}
       <Link to={`/produto/${product.id}`} className="relative overflow-hidden aspect-square block">
         <LazyImage
-          src={optimizeProductCard(product.image)}
+          src={optimizeProductCard(product.images?.[0] || product.image)}
           alt={product.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />

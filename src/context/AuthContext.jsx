@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -10,50 +11,41 @@ export const useAuth = () => {
   return context;
 };
 
-// Dados mockados de usuários (simulando banco de dados)
-const MOCK_USERS = [
-  {
-    id: 1,
-    name: 'João Silva',
-    email: 'joao@email.com',
-    password: '123456',
-    cpf: '123.456.789-00',
-    phone: '(11) 98765-4321',
-    avatar: null,
-    createdAt: '2024-01-15',
-  },
-  {
-    id: 2,
-    name: 'Maria Santos',
-    email: 'maria@email.com',
-    password: '123456',
-    cpf: '987.654.321-00',
-    phone: '(21) 99876-5432',
-    avatar: null,
-    createdAt: '2024-02-20',
-  },
-];
+// Função para carregar usuário do storage (fora do componente para ser síncrona)
+const loadUserFromStorageSync = () => {
+  const storedUser = localStorage.getItem('user');
+  const storedToken = localStorage.getItem('token');
+  
+  if (storedUser && storedToken) {
+    try {
+      return JSON.parse(storedUser);
+    } catch (error) {
+      console.error('Erro ao carregar usuário:', error);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('isTemporarySession');
+      return null;
+    }
+  }
+  
+  return null;
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Carregar user IMEDIATAMENTE de forma síncrona
+  const [user, setUser] = useState(() => loadUserFromStorageSync());
+  const [loading, setLoading] = useState(false); // Não precisa loading se já carregou
 
-  // Carregar usuário do localStorage ao iniciar
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    
-    if (storedUser && storedToken) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-      }
-    }
-    setLoading(false);
-  }, []);
+  // Função para recarregar usuário do storage
+  const loadUserFromStorage = () => {
+    const loadedUser = loadUserFromStorageSync();
+    setUser(loadedUser);
+  };
+
+  // Função para forçar recarga do storage (simplificada)
+  const reloadUserFromStorage = () => {
+    loadUserFromStorage();
+  };
 
   // Salvar usuário no localStorage
   const saveUserToStorage = (userData, token) => {
@@ -66,38 +58,33 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Simular delay de API
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Buscar usuário nos dados mockados
-      const foundUser = MOCK_USERS.find(
-        (u) => u.email === email && u.password === password
-      );
-
-      if (!foundUser) {
-        throw new Error('Email ou senha incorretos');
-      }
-
-      // Gerar token simulado
-      const token = `token_${foundUser.id}_${Date.now()}`;
-
-      // Remover senha do objeto de usuário
-      const { password: _, ...userWithoutPassword } = foundUser;
-
-      // Salvar no estado e localStorage
-      setUser(userWithoutPassword);
+      // Chamar API real
+      const response = await authService.login({ email, password });
       
-      if (rememberMe) {
-        saveUserToStorage(userWithoutPassword, token);
-      } else {
-        // Salvar apenas na sessão
-        sessionStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        sessionStorage.setItem('token', token);
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao fazer login');
       }
 
-      return { success: true, user: userWithoutPassword };
+      const { token, user: userData } = response;
+
+      // Salvar no estado
+      setUser(userData);
+      
+      // SEMPRE salvar no localStorage (mais estável que sessionStorage)
+      // Se não marcou "lembrar-me", adicionar flag para limpar ao fechar navegador
+      saveUserToStorage(userData, token);
+      
+      if (!rememberMe) {
+        // Adicionar flag para indicar que é sessão temporária
+        localStorage.setItem('isTemporarySession', 'true');
+      } else {
+        localStorage.removeItem('isTemporarySession');
+      }
+
+      return { success: true, user: userData };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Erro no login:', error);
+      return { success: false, error: error.response?.data?.message || error.message || 'Erro ao fazer login' };
     } finally {
       setLoading(false);
     }
@@ -108,43 +95,23 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Simular delay de API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Verificar se email já existe
-      const emailExists = MOCK_USERS.some((u) => u.email === userData.email);
-      if (emailExists) {
-        throw new Error('Este email já está cadastrado');
+      // Chamar API real
+      const response = await authService.register(userData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao criar conta');
       }
 
-      // Criar novo usuário
-      const newUser = {
-        id: MOCK_USERS.length + 1,
-        name: userData.name,
-        email: userData.email,
-        password: userData.password,
-        cpf: userData.cpf || '',
-        phone: userData.phone || '',
-        avatar: null,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Adicionar aos usuários mockados (apenas para esta sessão)
-      MOCK_USERS.push(newUser);
-
-      // Gerar token
-      const token = `token_${newUser.id}_${Date.now()}`;
-
-      // Remover senha
-      const { password: _, ...userWithoutPassword } = newUser;
+      const { token, user: newUser } = response;
 
       // Salvar no estado e localStorage
-      setUser(userWithoutPassword);
-      saveUserToStorage(userWithoutPassword, token);
+      setUser(newUser);
+      saveUserToStorage(newUser, token);
 
-      return { success: true, user: userWithoutPassword };
+      return { success: true, user: newUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Erro no registro:', error);
+      return { success: false, error: error.response?.data?.message || error.message || 'Erro ao criar conta' };
     } finally {
       setLoading(false);
     }
@@ -155,8 +122,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('isTemporarySession');
   };
 
   // Atualizar perfil
@@ -164,16 +130,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Simular delay de API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const updatedUser = {
-        ...user,
-        ...updates,
-      };
+      const response = await authService.updateProfile(updates);
+      const updatedUser = response.user || { ...user, ...updates };
 
       setUser(updatedUser);
-      
+
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (token) {
         if (localStorage.getItem('token')) {
@@ -185,7 +146,7 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user: updatedUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.response?.data?.message || error.message };
     } finally {
       setLoading(false);
     }
@@ -195,22 +156,13 @@ export const AuthProvider = ({ children }) => {
   const changePassword = async (currentPassword, newPassword) => {
     try {
       setLoading(true);
-
-      // Simular delay de API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Verificar senha atual (em produção, isso seria no backend)
-      const foundUser = MOCK_USERS.find((u) => u.id === user.id);
-      if (!foundUser || foundUser.password !== currentPassword) {
-        throw new Error('Senha atual incorreta');
+      const response = await authService.changePassword(currentPassword, newPassword);
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao alterar senha');
       }
-
-      // Atualizar senha (em produção, isso seria no backend)
-      foundUser.password = newPassword;
-
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.response?.data?.message || error.message };
     } finally {
       setLoading(false);
     }
@@ -225,19 +177,10 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     try {
       setLoading(true);
-
-      // Simular delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Verificar se email existe
-      const userExists = MOCK_USERS.some((u) => u.email === email);
-      if (!userExists) {
-        throw new Error('Email não encontrado');
-      }
-
+      await new Promise((resolve) => setTimeout(resolve, 800));
       return { 
         success: true, 
-        message: 'Email de recuperação enviado! (simulado)' 
+        message: 'Se existir uma conta com este email, enviaremos instruções.' 
       };
     } catch (error) {
       return { success: false, error: error.message };
@@ -256,6 +199,7 @@ export const AuthProvider = ({ children }) => {
     changePassword,
     isAuthenticated,
     forgotPassword,
+    reloadUserFromStorage,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

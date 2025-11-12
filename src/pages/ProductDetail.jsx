@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Star, Check, ArrowLeft, Heart, Share2, RotateCw, Grid3x3, MessageCircle, AlertTriangle } from 'lucide-react';
-import { products } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useRecentlyViewed } from '../context/RecentlyViewedContext';
 import ProductCard from '../components/ProductCard';
@@ -11,6 +10,7 @@ import Image360Viewer from '../components/Image360Viewer';
 import SEO from '../components/SEO';
 import { has360View, generate360Images } from '../utils/generate360Images';
 import useSwipe from '../hooks/useSwipe';
+import { productService } from '../services/api';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -18,24 +18,26 @@ const ProductDetail = () => {
   const { addToCart } = useCart();
   const { addProduct } = useRecentlyViewed();
   
-  const product = products.find(p => p.id === parseInt(id));
-  
+  const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [view360, setView360] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   // Hook de swipe para navegar entre imagens
   const nextImage = () => {
-    if (product && product.images) {
+    if (product && Array.isArray(product.images) && product.images.length > 0) {
       setSelectedImage((prev) => (prev + 1) % product.images.length);
     }
   };
   
   const previousImage = () => {
-    if (product && product.images) {
+    if (product && Array.isArray(product.images) && product.images.length > 0) {
       setSelectedImage((prev) => (prev - 1 + product.images.length) % product.images.length);
     }
   };
@@ -46,16 +48,60 @@ const ProductDetail = () => {
   const isOutOfStock = product?.stock === 0;
   const isLowStock = product?.stock > 0 && product?.stock <= 5;
   
-  // Verificar se produto tem visualização 360°
+  // Verificar se produto tem visualização 360° (opcional)
   const has360 = product ? has360View(product.id) : false;
-  const images360 = has360 && product ? generate360Images(product.id, product.images[0]) : [];
+  const images360 = has360 && product && Array.isArray(product.images) && product.images.length > 0
+    ? generate360Images(product.id, product.images[0])
+    : [];
 
-  // Adicionar produto ao histórico quando a página carregar
+  // Buscar produto por ID e relacionados
   useEffect(() => {
-    if (product) {
-      addProduct(product);
-    }
-  }, [product?.id]); // Dependência no ID para atualizar se mudar de produto
+    let active = true;
+    setLoading(true);
+    setError('');
+    setProduct(null);
+    setRelatedProducts([]);
+
+    productService.getById(id)
+      .then((res) => {
+        if (!active) return;
+        const p = res.product;
+        setProduct(p);
+        addProduct(p);
+        // Buscar relacionados pela mesma categoria
+        if (p?.category) {
+          productService.getByCategory(p.category, { limit: 8 })
+            .then((r) => {
+              if (!active) return;
+              const items = (r.products || []).filter((it) => it.id !== p.id).slice(0, 4);
+              setRelatedProducts(items);
+            })
+            .catch(() => {
+              if (!active) return;
+              setRelatedProducts([]);
+            });
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError('Produto não encontrado');
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-heading font-bold mb-2">Carregando...</h1>
+        <p className="text-gray-600">Buscando informações do produto</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -68,9 +114,7 @@ const ProductDetail = () => {
     );
   }
 
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  // relatedProducts agora vem da API via state
 
   const handleAddToCart = () => {
     if (!selectedSize && product.sizes.length > 1) {
@@ -175,14 +219,14 @@ const ProductDetail = () => {
               <>
                 <div ref={swipeRef} className="bg-white rounded-xl overflow-hidden mb-4 aspect-square select-none">
                   <img
-                    src={product.images[selectedImage]}
+                    src={(product.images && product.images[selectedImage]) || '/og-image.jpg'}
                     alt={product.name}
                     className="w-full h-full object-cover"
                     loading="eager"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                  {product.images.map((image, index) => (
+                  {(product.images || []).map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}

@@ -43,8 +43,10 @@ export default defineConfig({
     assetsInlineLimit: 4096, // 4kb
   },
   server: {
-    port: 3000,
-    open: true
+    port: 5173,
+    strictPort: true,
+    open: false,
+    host: 'localhost'
   },
   // Otimizar dependências
   optimizeDeps: {

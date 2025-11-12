@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -11,76 +11,60 @@ import {
   Calendar,
   BarChart3
 } from 'lucide-react';
+import { adminService, productService } from '../../services/api';
 
 const Dashboard = () => {
-  const [period, setPeriod] = useState('7days');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [stats, setStats] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
 
-  // Mock data - depois virá da API
-  const stats = [
-    {
-      title: 'Vendas Hoje',
-      value: 'R$ 12.450,00',
-      change: '+15%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Pedidos',
-      value: '47',
-      change: '+8%',
-      trend: 'up',
-      icon: ShoppingCart,
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Produtos',
-      value: '156',
-      change: '+3',
-      trend: 'up',
-      icon: Package,
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Clientes',
-      value: '1.234',
-      change: '+12%',
-      trend: 'up',
-      icon: Users,
-      color: 'bg-orange-500'
-    }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const [dash, productsResp] = await Promise.all([
+          adminService.getDashboardStats(),
+          productService.getAll({ limit: 200 })
+        ]);
 
-  const recentOrders = [
-    { id: '#1234', customer: 'João Silva', total: 'R$ 450,00', status: 'pending', date: 'Hoje às 14:30' },
-    { id: '#1233', customer: 'Maria Santos', total: 'R$ 890,00', status: 'confirmed', date: 'Hoje às 13:15' },
-    { id: '#1232', customer: 'Pedro Costa', total: 'R$ 320,00', status: 'shipped', date: 'Hoje às 11:00' },
-    { id: '#1231', customer: 'Ana Lima', total: 'R$ 670,00', status: 'delivered', date: 'Ontem às 18:45' },
-    { id: '#1230', customer: 'Carlos Rocha', total: 'R$ 1.200,00', status: 'confirmed', date: 'Ontem às 16:20' }
-  ];
+        setStats(dash.stats);
+        setRecentOrders(dash.recentOrders || []);
 
-  const lowStockProducts = [
-    { name: 'Shape Element Cloud', stock: 3, category: 'Shapes' },
-    { name: 'Truck Independent 149', stock: 5, category: 'Trucks' },
-    { name: 'Rodas Spitfire 53mm', stock: 8, category: 'Rodas' },
-    { name: 'Tênis Nike SB', stock: 2, category: 'Calçados' }
-  ];
+        const products = productsResp.products || [];
+        const low = products
+          .filter(p => (p.stock ?? 0) > 0 && p.stock <= 10)
+          .sort((a, b) => a.stock - b.stock)
+          .slice(0, 10);
+        setLowStockProducts(low);
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err);
+        setError('Erro ao carregar dados do dashboard.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-blue-100 text-blue-800',
-      shipped: 'bg-purple-100 text-purple-800',
-      delivered: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800'
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      CONFIRMED: 'bg-blue-100 text-blue-800',
+      SHIPPED: 'bg-purple-100 text-purple-800',
+      DELIVERED: 'bg-green-100 text-green-800',
+      CANCELLED: 'bg-red-100 text-red-800'
     };
 
     const labels = {
-      pending: 'Pendente',
-      confirmed: 'Confirmado',
-      shipped: 'Enviado',
-      delivered: 'Entregue',
-      cancelled: 'Cancelado'
+      PENDING: 'Pendente',
+      CONFIRMED: 'Confirmado',
+      SHIPPED: 'Enviado',
+      DELIVERED: 'Entregue',
+      CANCELLED: 'Cancelado'
     };
 
     return (
@@ -90,36 +74,59 @@ const Dashboard = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
-          
-          return (
-            <div key={stat.title} className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <div className={`flex items-center gap-1 text-sm font-medium ${
-                  stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  <TrendIcon className="w-4 h-4" />
-                  {stat.change}
-                </div>
-              </div>
-              <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.title}</h3>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+      {/* Stats Cards (dados reais) */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">{error}</div>
+      )}
+
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-lg bg-green-500"><DollarSign className="w-6 h-6 text-white" /></div>
             </div>
-          );
-        })}
-      </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Receita Total</h3>
+            <p className="text-2xl font-bold text-gray-900">R$ {Number(stats.revenue).toFixed(2)}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-lg bg-blue-500"><ShoppingCart className="w-6 h-6 text-white" /></div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Pedidos</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.orders}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-lg bg-purple-500"><Package className="w-6 h-6 text-white" /></div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Produtos Ativos</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.products}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-lg bg-orange-500"><Users className="w-6 h-6 text-white" /></div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Clientes</h3>
+            <p className="text-2xl font-bold text-gray-900">{stats.users}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Orders */}
+        {/* Pedidos Recentes (reais) */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-bold text-gray-900">Pedidos Recentes</h2>
@@ -130,14 +137,14 @@ const Dashboard = () => {
                 <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-gray-900">{order.id}</span>
+                      <span className="font-semibold text-gray-900">{order.orderNumber}</span>
                       {getStatusBadge(order.status)}
                     </div>
-                    <p className="text-sm text-gray-600">{order.customer}</p>
-                    <p className="text-xs text-gray-400">{order.date}</p>
+                    <p className="text-sm text-gray-600">{order.user?.name || order.customerName || '-'}</p>
+                    <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleString('pt-BR')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">{order.total}</p>
+                    <p className="font-bold text-gray-900">R$ {Number(order.total || 0).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -148,7 +155,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Low Stock Products */}
+        {/* Estoque Baixo (real) */}
         <div className="bg-white rounded-xl shadow-sm">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-bold text-gray-900">Estoque Baixo</h2>
@@ -176,44 +183,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Eye className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Visitantes Hoje</p>
-              <p className="text-2xl font-bold text-gray-900">2.845</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <ShoppingCart className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Taxa de Conversão</p>
-              <p className="text-2xl font-bold text-gray-900">3.2%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Star className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Avaliação Média</p>
-              <p className="text-2xl font-bold text-gray-900">4.8</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
